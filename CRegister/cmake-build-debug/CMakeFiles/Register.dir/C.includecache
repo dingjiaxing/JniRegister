@@ -1,0 +1,22 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/Users/djx/CLionProjects/Register/DynamicRegister.c
+jni.h
+/Users/djx/CLionProjects/Register/jni.h
+
+/Users/djx/CLionProjects/Register/jni.h
+stdio.h
+-
+stdarg.h
+-
+jni_md.h
+/Users/djx/CLionProjects/Register/jni_md.h
+
+/Users/djx/CLionProjects/Register/jni_md.h
+
