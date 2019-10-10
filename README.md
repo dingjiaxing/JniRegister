@@ -2,8 +2,8 @@
 JNI注册，是指将java层方法(native关键字修饰的)和C层方法对应起来，以实现java层代码调用c层代码的目的。JNI注册分为静态注册和动态注册两种，静态注册是通过固定格式方法名进行关联，动态注册是通过动态添加映射关系来进行关联，方法名可以随便起，比较灵活，我们推荐使用动态注册。在进行注册前，需要先下载两个工具Clion和eclipse(能写java application就可以)，然后我们就可以开始注册了。
 ## 目录说明
 - doc中有jni基础知识的详细文档
-- JavaJni目录为Java层代码
-- CRegister为C层代码
+- JavaJni目录为Java层代码，开发环境为eclipse
+- CRegister为C层代码，开发环境为Clion
 ## 静态注册
 1. 首先，在eclipse新建一个Java Application，名称可以随意，比如叫JavaJni,然后在src目录下新建一个package名为clz，再clz包下新建java类Register.java，类中写一个native方法如下：
 ```
@@ -128,3 +128,97 @@ public class DynamicRegister {
 	}
 }
 ```
+
+# jni调用java层静态和非静态函数
+jni调用java中的函数大致分为以下三个步骤
+- 通过(*env)->FindClass找到类的对象
+- 通过(*env)->GetMethodID来获取方法Id
+- 通过调用(*env)-<CallVoidMethod来调用对应的函数/方法
+--------------------------------
+## 详细实现步骤
+1. 首先编写java层静态和非静态方法
+```
+package clz;
+public class ClassMethod {
+	public ClassMethod(){ //构造方法
+		System.out.println("ClassMethod() constructor");
+	}
+	private static void callStaticMethod(String str, int i) { //静态方法
+		System.out.format("ClassMethod::callSatticMethod called!-->str=%s,"+
+				" i=%d\n", str,i);
+	}
+	private void callInstanceMethod(String str, int i) { //非静态方法
+		System.out.format("ClassMethod::callInstanceMethod called!-->str=%s,"+
+				"i=%d\n",str,i);
+	}
+}
+```
+2. 编写java层native方法声明，并利用方法注册生成c语言的.h文件，[如何注册请参考](https://blog.csdn.net/qq_23081779/article/details/101674084)
+```
+public class JniTest {
+	native void callJavaStaticMethod();
+	native void callJavaInstanceMethod();
+}
+```
+3. 新建.h对应的.c文件，并引入.h文件
+- 调用静态方法
+```
+#include "clz_JniTest.h"
+JNIEXPORT void JNICALL Java_clz_JniTest_callJavaStaticMethod
+        (JNIEnv *env, jobject jobject){
+    //1.找到对应类的class对象
+    jclass clz = (*env)->FindClass(env,"clz/ClassMethod");
+    if(clz == NULL){
+        printf("clz is null");
+        return;
+    }
+    //2.获取方法id
+    jmethodID jmeid = (*env)->GetStaticMethodID(env,clz,"callStaticMethod","(Ljava/lang/String;I)V");
+    if(jmeid==NULL){
+        printf("jmeid is null");
+        return;
+    }
+    jstring  arg = (*env)->NewStringUTF(env,"我是静态类");
+    //3.调用java层方法
+    (*env)->CallStaticVoidMethod(env,clz,jmeid,arg,100);
+    (*env)->DeleteLocalRef(env,clz);
+    (*env)->DeleteLocalRef(env,arg);
+}
+```
+- 调用非静态方法
+```
+JNIEXPORT void JNICALL Java_clz_JniTest_callJavaInstanceMethod
+        (JNIEnv * env, jobject jobject0){
+	//1.获取类的class对象
+    jclass clz = (*env)->FindClass(env,"clz/ClassMethod");
+    if(clz == NULL){
+        printf("clz is null");
+        return;
+    }
+    //2.获取类的构造方法
+    jmethodID jcmid = (*env)->GetMethodID(env,clz,"<init>","()V");
+    if(jcmid == NULL){
+        printf("jcmid is null");
+        return;
+    }
+    //3.创建对象
+    jobject jobject = (*env)->NewObject(env,clz,jcmid);
+    if(jobject == NULL){
+        printf("jobject is NULL");
+        return;
+    }
+    //4.获取方法id
+    jmethodID jmeid = (*env)->GetMethodID(env,clz,"callInstanceMethod","(Ljava/lang/String;I)V");
+    if(jmeid==NULL){
+        printf("jmeid is null");
+        return;
+    }
+    jstring  arg = (*env)->NewStringUTF(env,"hello from jni");
+    //5.调用非静态方法
+    (*env)->CallVoidMethod(env,jobject,jmeid,arg,100);
+    (*env)->DeleteLocalRef(env,clz);
+    (*env)->DeleteLocalRef(env,jobject);
+    (*env)->DeleteLocalRef(env,arg);
+}
+```
+[源码的github地址](https://github.com/dingjiaxing/JniRegister)
