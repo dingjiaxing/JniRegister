@@ -221,4 +221,3 @@ JNIEXPORT void JNICALL Java_clz_JniTest_callJavaInstanceMethod
     (*env)->DeleteLocalRef(env,arg);
 }
 ```
-[源码的github地址](https://github.com/dingjiaxing/JniRegister)
